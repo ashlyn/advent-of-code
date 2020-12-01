@@ -1,4 +1,3 @@
-import _ from "lodash";
 import * as util from "../../../util/util";
 import * as test from "../../../util/test";
 import chalk from "chalk";
@@ -50,7 +49,7 @@ async function run() {
 	const part2Solution = String(await p{year}day{day}_part2(input));
 	const part2After = performance.now();
 	
-	logSolution(part1Solution, part2Solution);
+	logSolution(DAY, YEAR, part1Solution, part2Solution);
 
 	log(chalk.gray("--- Performance ---"));
 	log(chalk.gray(`Part 1: ${util.msToString(part1After - part1Before)}`));
