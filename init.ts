@@ -8,6 +8,7 @@ import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
 
 /* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface Settings {
   pristine: boolean;
@@ -19,6 +20,8 @@ interface Settings {
   templatePath: string;
   compareWithPath?: string;
   years: number[];
+  testDataTemplatePath: string;
+  testFileTemplatePath: string;
 }
 
 if (
@@ -68,6 +71,8 @@ const settings: Settings = {
   templatePath: '',
   compareWithPath: '',
   pristine: false,
+  testDataTemplatePath: '',
+  testFileTemplatePath: '',
 };
 const appRoot = getAppRoot();
 const localStorage = new LocalStorage(path.join(appRoot, '.scratch'));
@@ -142,12 +147,38 @@ function getSolutionPath(day: number, year: number) {
   return path.join(dataDir, `index${templateExtension}`);
 }
 
+function getTestDataPath(day: number, year: number) {
+  const dataDir = getDayRoot(day, year, settings.rootPath);
+  return path.join(dataDir, 'testCases.ts');
+}
+
+function getTestFilePath(day: number, year: number) {
+  const dataDir = getDayRoot(day, year, settings.rootPath);
+  return path.join(dataDir, 'index.spec.ts');
+}
+
 let template: string | undefined;
 async function getTemplate() {
   if (template == undefined) {
     template = await fs.readFile(settings.templatePath, 'utf-8');
   }
   return template;
+}
+
+let testDataTemplate: string | undefined;
+async function getTestDataTemplate() {
+  if (testDataTemplate == undefined) {
+    testDataTemplate = await fs.readFile(settings.testDataTemplatePath, 'utf-8');
+  }
+  return testDataTemplate;
+}
+
+let testFileTemplate: string | undefined;
+async function getTestFileTemplate() {
+  if (testFileTemplate == undefined) {
+    testFileTemplate = await fs.readFile(settings.testFileTemplatePath, 'utf-8');
+  }
+  return testFileTemplate;
 }
 
 let compareTemplate: string | undefined;
@@ -213,6 +244,9 @@ function parseArgs() {
     templatePathIndex >= 0 ? args[templatePathIndex + 1] : path.join(getAppRoot(), 'solutionTemplate.ts.dat');
   const origTemplatePath = templatePath;
 
+  const testDataTemplatePath = path.join(getAppRoot(), 'testDataTemplate.ts.dat');
+  const testFileTemplatePath = path.join(getAppRoot(), 'testFileTemplate.ts.dat');
+
   const compareWithIndex = args.findIndex(a => a === '--compare-with');
   const compareWithPath =
     compareWithIndex >= 0 ? args[compareWithIndex + 1] : path.join(getAppRoot(), 'compareTemplate.dat');
@@ -230,6 +264,14 @@ function parseArgs() {
     throw new Error(`Could not find template at path: ${origTemplatePath}`);
   }
 
+  if (!existsSync(testDataTemplatePath) && seed) {
+    throw new Error(`Could not find test data template at path: ${testDataTemplatePath}`);
+  }
+
+  if (!existsSync(testFileTemplatePath) && seed) {
+    throw new Error(`Could not find test file template at path: ${testFileTemplatePath}`);
+  }
+
   Object.assign(settings, {
     sessionToken,
     years,
@@ -240,6 +282,8 @@ function parseArgs() {
     templatePath,
     pristine,
     compareWithPath,
+    testDataTemplatePath,
+    testFileTemplatePath,
   } as Settings);
 
   if (!settings.storeToken) {
@@ -247,31 +291,44 @@ function parseArgs() {
   }
 }
 
+async function writeFile(
+  outputFilePath: string,
+  getTemplateFunc: () => Promise<string>,
+  getCompareTemplateFunc: () => Promise<string>,
+  replacements: any
+) {
+  const finalReplacements = {
+    ...replacements,
+    '{solution_path}': outputFilePath,
+  };
+  await mkdirp(path.dirname(outputFilePath));
+  let doesNotExistOrIsUnchanged = !existsSync(outputFilePath);
+  if (!doesNotExistOrIsUnchanged) {
+    const compareTemplate = await getCompareTemplateFunc();
+    const existingFileContents = await fs.readFile(outputFilePath, 'utf-8');
+    const compareSeed = replaceAll(compareTemplate, finalReplacements);
+    doesNotExistOrIsUnchanged = compareSeed === existingFileContents;
+  }
+
+  if (settings.pristine || doesNotExistOrIsUnchanged) {
+    const seedText = replaceAll(await getTemplateFunc(), finalReplacements);
+    await fs.writeFile(outputFilePath, seedText, 'utf-8');
+  }
+}
+
 async function seed(year: number) {
   for (let i = 0; i < 25; ++i) {
     const day = i + 1;
-    const solutionPath = getSolutionPath(day, year);
 
     const replacements = {
       '{year}': String(year),
       '{day}': String(day),
-      '{solution_path}': solutionPath,
       '{data_path}': getDataPath(day, year),
       '{problem_url}': getProblemUrl(day, year),
     };
-    await mkdirp(path.dirname(solutionPath));
-    let doesNotExistOrIsUnchanged = !existsSync(solutionPath);
-    if (!doesNotExistOrIsUnchanged) {
-      const compareTemplate = await getCompareTemplate();
-      const existingFileContents = await fs.readFile(solutionPath, 'utf-8');
-      const compareSeed = replaceAll(compareTemplate, replacements);
-      doesNotExistOrIsUnchanged = compareSeed === existingFileContents;
-    }
-
-    if (settings.pristine || doesNotExistOrIsUnchanged) {
-      const seedText = replaceAll(await getTemplate(), replacements);
-      await fs.writeFile(solutionPath, seedText, 'utf-8');
-    }
+    await writeFile(getSolutionPath(day, year), getTemplate, getCompareTemplate, replacements);
+    await writeFile(getTestDataPath(day, year), getTestDataTemplate, getTestDataTemplate, replacements);
+    await writeFile(getTestFilePath(day, year), getTestFileTemplate, getTestFileTemplate, replacements);
   }
 }
 

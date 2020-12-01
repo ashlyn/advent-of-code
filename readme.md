@@ -29,7 +29,6 @@ Prerequisites: install [Node.js](https://nodejs.org) 14 (LTS) or later.
 
 Once this is done, the folder `years/<current_year>` will contain a folder for each day, each of which includes your personalized data file and a solution file ready-to-run. Individual days can be run via the NPM `solve` script by specifying the year and day, e.g. `npm run solve 2020 1`. If no year and day arguments are provided, the most recent puzzle will be run. Go ahead, run `npm run solve 2020 1` and see that it prints out "Not implemented" for Part 1 and Part 2 of that problem. That's your job! Open up `years/2019/01/index.ts` and get to work!
 
-
 **A bit more in-depth**
 
 The script `init.js` has two main functions: `suck` and `seed`.
@@ -89,7 +88,6 @@ You can pass `true` to `beginTests()` and `beginSection()` to suppress the outpu
 ![test output screenshot](./.assets/test-output-screenshot.png)
 
 In addition, Jest is configured to run unit tests over smaller pieces of your puzzle solutions, like input parsing. To run all unit tests, simply run `npm run test`.
-
 
 ## Formatting
 

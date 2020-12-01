@@ -2,6 +2,6 @@
   "editor.insertSpaces": false,
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
   "tslint.configFile": "tsconfig.json"
 }

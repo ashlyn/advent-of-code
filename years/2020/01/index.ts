@@ -3,7 +3,9 @@ import * as test from '../../../util/test';
 import chalk from 'chalk';
 import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
-const { log, logSolution, trace } = LOGUTIL;
+import { part1Tests, part2Tests } from './testCases';
+
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 1;
@@ -30,12 +32,12 @@ export const findComplement = (input: Array<number>, target: number): number | u
   });
 };
 
-async function p2020day1_part1(input: Array<number>): Promise<number | undefined> {
+export async function p2020day1_part1(input: Array<number>): Promise<number | undefined> {
   const value1 = findComplement(input, TARGET);
   if (value1) return value1 * (TARGET - value1);
 }
 
-async function p2020day1_part2(input: Array<number>) {
+export async function p2020day1_part2(input: Array<number>): Promise<number | undefined> {
   return input
     .map((firstValue, i) => {
       const complementTarget = TARGET - firstValue;
@@ -53,70 +55,15 @@ async function p2020day1_part2(input: Array<number>) {
 }
 
 async function runTests() {
-  const part1tests: TestCase[] = [
-    {
-      description: 'Standard',
-      input: '1023\n948\n539\n1072',
-      expected: '1016256',
-    },
-    {
-      description: 'Does not use same input twice',
-      input: '1010\n1023\n948\n539\n1072',
-      expected: '1016256',
-    },
-    {
-      description: 'Handles duplicates',
-      input: '1010\n1023\n1010',
-      expected: '1020100',
-    },
-    {
-      description: 'No solution found',
-      input: '1\n2',
-      expected: 'undefined',
-    },
-    {
-      description: 'Input includes non-numbers',
-      input: '1\na\n948\n1072',
-      expected: '1016256',
-    },
-  ];
-  const part2tests: TestCase[] = [
-    {
-      description: 'Standard',
-      input: '1023\n948\n539\n375\n321\n697',
-      expected: '247783500',
-    },
-    {
-      description: 'Does not use same input twice',
-      input: '753\n1010\n505',
-      expected: 'undefined',
-    },
-    {
-      description: 'Handles duplicates',
-      input: '505\n1010\n505',
-      expected: '257575250',
-    },
-    {
-      description: 'No solution found',
-      input: '1\n2',
-      expected: 'undefined',
-    },
-    {
-      description: 'Input includes non-numbers',
-      input: '1023\n948\n539\nabc\n375\n321\n697',
-      expected: '247783500',
-    },
-  ];
-
   // Run tests
   test.beginTests();
   test.beginSection();
-  for (const testCase of part1tests) {
+  for (const testCase of part1Tests) {
     const testInput = parseInput(testCase.input);
     test.logTestResult(testCase, String(await p2020day1_part1(testInput)));
   }
   test.beginSection();
-  for (const testCase of part2tests) {
+  for (const testCase of part2Tests) {
     const testInput = parseInput(testCase.input);
     test.logTestResult(testCase, String(await p2020day1_part2(testInput)));
   }
