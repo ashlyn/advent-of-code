@@ -6,4 +6,5 @@ if (year == undefined || day == undefined) {
   ({ year, day } = util.getLatestPuzzleDate());
 }
 const latestPuzzleFile = path.join(util.getDayRoot(day, year), 'index');
-require(latestPuzzleFile);
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require(latestPuzzleFile).default();

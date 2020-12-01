@@ -45,10 +45,12 @@ async function run() {
 	logSolution(DAY, YEAR, part1Solution, part2Solution);
 }
 
-run()
-	.then(() => {
-		process.exit();
-	})
-	.catch(error => {
-		throw error;
-	});
+export default (): void => {
+  run()
+    .then(() => {
+      process.exit();
+    })
+    .catch(error => {
+      throw error;
+    });
+};

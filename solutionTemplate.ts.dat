@@ -57,10 +57,12 @@ async function run() {
 	log();
 }
 
-run()
-	.then(() => {
-		process.exit();
-	})
-	.catch(error => {
-		throw error;
-	});
+export default (): void => {
+  run()
+    .then(() => {
+      process.exit();
+    })
+    .catch(error => {
+      throw error;
+    });
+};

@@ -27,9 +27,8 @@ Prerequisites: install [Node.js](https://nodejs.org) 14 (LTS) or later.
 6. An instance of Chromium will open to a GitHub\* login page. Log in with your credentials. Chromium will then close.
 7. Command line output will show progress for downloading the data for each problem in the current\*\* year of AoC.
 
-Once this is done, the folder `years/<current_year>` will contain a folder for each day, each of which includes your personalized data file and a solution file ready-to-run. Go ahead, run `node years/2019/01` and see that it prints out "Not implemented" for Part 1 and Part 2 of that problem. That's your job! Open up `years/2019/01/index.ts` and get to work!
+Once this is done, the folder `years/<current_year>` will contain a folder for each day, each of which includes your personalized data file and a solution file ready-to-run. Individual days can be run via the NPM `solve` script by specifying the year and day, e.g. `npm run solve 2020 1`. If no year and day arguments are provided, the most recent puzzle will be run. Go ahead, run `npm run solve 2020 1` and see that it prints out "Not implemented" for Part 1 and Part 2 of that problem. That's your job! Open up `years/2019/01/index.ts` and get to work!
 
-To run the TypeScript solutions, use `npx ts-node years/YEAR/DAY`, replacing YEAR and DAY with the values for the solution you want to run. For example `npx ts-node years/2015/01`. If you want, you can install ts-node globally, which will allow to you remove npx from the invocation: `npm install --global ts-node` and then `ts-node years/2015/01`.
 
 **A bit more in-depth**
 
@@ -88,3 +87,10 @@ There is a small framework included for running test cases. The `run()` function
 You can pass `true` to `beginTests()` and `beginSection()` to suppress the output of all tests or tests in a particular section, respectively.
 
 ![test output screenshot](./.assets/test-output-screenshot.png)
+
+In addition, Jest is configured to run unit tests over smaller pieces of your puzzle solutions, like input parsing. To run all unit tests, simply run `npm run test`.
+
+
+## Formatting
+
+Formatting is enforced with both Prettier and ESLint. While the included VSCode settings should configure your IDE to automatically formate code on save and paste, you can also lint the code by running `npm run lint` and format the code with Prettier by running `npm run prettier-format`.

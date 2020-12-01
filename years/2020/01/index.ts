@@ -14,6 +14,8 @@ LOGUTIL.setDebug(DEBUG);
 // data path    : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/01/data.txt
 // problem url  : https://adventofcode.com/2020/day/1
 
+export const parseInput = (input: string): Array<number> => input.split('\n').map(i => parseInt(i));
+
 async function p2020day1_part1(input: string) {
   return 'Not implemented';
 }
@@ -57,10 +59,12 @@ async function run() {
   log();
 }
 
-run()
-  .then(() => {
-    process.exit();
-  })
-  .catch(error => {
-    throw error;
-  });
+export default (): void => {
+  run()
+    .then(() => {
+      process.exit();
+    })
+    .catch(error => {
+      throw error;
+    });
+};
