@@ -41,9 +41,11 @@ function formatTestInput(input: string) {
 
 export function logTestResult(testCase: TestCase, result: string) {
   if (testCase.expected === result) {
-    testLog(`${grayBar}  ${blueBar} ${testIndex}.  ${chalk.greenBright('SUCCESS')}`);
+    testLog(
+      `${grayBar}  ${blueBar} ${testIndex}.  ${chalk.greenBright('SUCCESS')} ${chalk.yellow(testCase.description)}`
+    );
   } else {
-    testLog(`${grayBar}  ${blueBar} ${testIndex}.  ${chalk.redBright('FAILED')}`);
+    testLog(`${grayBar}  ${blueBar} ${testIndex}.  ${chalk.redBright('FAILED')} ${chalk.yellow(testCase.description)}`);
     testLog(`${grayBar}  ${blueBar}     ${chalk.blackBright('┄┄┄┄┄┄┄┄┄┄┄┄┄┄  Test Input')}`);
     testLog(formatTestInput(testCase.input));
     testLog(`${grayBar}  ${blueBar}     ${chalk.blackBright('┄┄┄┄┄┄┄┄┄┄┄┄┄┄  End')}`);
