@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 2;
@@ -16,12 +16,50 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/02/data.txt
 // problem url : https://adventofcode.com/2020/day/2
 
-export async function p2020day2_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+const instructionPattern = /([0-9]+)-([0-9]+) ([a-z]): ([a-z]+)/g;
+
+export type Password = {
+  minimum: number;
+  maximum: number;
+  searchCharacter: string;
+  password: string;
+};
+
+export const parseInput = (input: string): Password[] => {
+  return [...input.matchAll(instructionPattern)].map(([, ...matches]) => {
+    return {
+      minimum: parseInt(matches[0]),
+      maximum: parseInt(matches[1]),
+      searchCharacter: matches[2],
+      password: matches[3],
+    };
+  });
+};
+
+export const isValidWithCount = ({ minimum, maximum, searchCharacter, password }: Password): boolean => {
+  const filteredPassword = [...password].filter(c => c === searchCharacter);
+  return filteredPassword.length >= minimum && filteredPassword.length <= maximum;
+};
+
+export const isValidWithPosition = ({ minimum, maximum, searchCharacter, password }: Password): boolean => {
+  if (minimum > password.length || maximum > password.length) return false;
+
+  const minimumCharacter = password.charAt(minimum - 1);
+  const maximumCharacter = password.charAt(maximum - 1);
+  return (
+    (minimumCharacter === searchCharacter || maximumCharacter === searchCharacter) &&
+    minimumCharacter !== maximumCharacter
+  );
+};
+
+export async function p2020day2_part1(input: string): Promise<number> {
+  const validPasswords = parseInput(input).filter(isValidWithCount);
+  return validPasswords.length;
 }
 
-export async function p2020day2_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day2_part2(input: string): Promise<number> {
+  const validPasswords = parseInput(input).filter(isValidWithPosition);
+  return validPasswords.length;
 }
 
 async function runTests() {
