@@ -18,26 +18,26 @@ const TARGET = 2020;
 // data path    : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/01/data.txt
 // problem url  : https://adventofcode.com/2020/day/1
 
-export const parseInput = (input: string): Array<number> => {
+export const parseInput = (input: string): number[] => {
   return input
     .split('\n')
     .map(i => parseInt(i))
     .filter(i => !isNaN(i));
 };
 
-export const findComplement = (input: Array<number>, target: number): number | undefined => {
+export const findComplement = (input: number[], target: number): number | undefined => {
   return input.find((element, index, array) => {
     const complementIndex = array.indexOf(target - element);
     return complementIndex > -1 && complementIndex != index;
   });
 };
 
-export async function p2020day1_part1(input: Array<number>): Promise<number | undefined> {
+export async function p2020day1_part1(input: number[]): Promise<number | undefined> {
   const value1 = findComplement(input, TARGET);
   if (value1) return value1 * (TARGET - value1);
 }
 
-export async function p2020day1_part2(input: Array<number>): Promise<number | undefined> {
+export async function p2020day1_part2(input: number[]): Promise<number | undefined> {
   return input
     .map((firstValue, i) => {
       const complementTarget = TARGET - firstValue;
