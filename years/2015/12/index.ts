@@ -5,7 +5,10 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
+
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const YEAR = 2015;
 const DAY = 12;
@@ -16,12 +19,26 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2015/12/data.txt
 // problem url : https://adventofcode.com/2015/day/12
 
-export async function p2015day12_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export const flatten = (input: any, valuesToIgnore: Array<string | number> = []): Array<string | number> => {
+  if (typeof input === 'string' || typeof input === 'number') return [input];
+  if (!Array.isArray(input) && Object.values(input).some(v => valuesToIgnore.includes(v as any))) return [];
+  return Object.keys(input).reduce((a, b) => a.concat(flatten(input[b], valuesToIgnore)), [] as Array<string | number>);
+};
+
+export const sumNumbers = (input: Array<string | number>): number => {
+  return input.reduce((a: number, b) => (typeof b === 'number' && !Number.isNaN(b) ? a + b : a), 0);
+};
+
+export async function p2015day12_part1(input: string): Promise<number> {
+  const json = JSON.parse(input);
+  const flattened = flatten(json);
+  return sumNumbers(flattened);
 }
 
-export async function p2015day12_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2015day12_part2(input: string): Promise<number> {
+  const json = JSON.parse(input);
+  const flattened = flatten(json, ['red']);
+  return sumNumbers(flattened);
 }
 
 async function runTests() {

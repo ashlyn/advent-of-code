@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2015;
 const DAY = 10;
@@ -16,12 +16,35 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2015/10/data.txt
 // problem url : https://adventofcode.com/2015/day/10
 
-export async function p2015day10_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export const lookAndSay = (input: string): string => {
+  let counter = 0;
+  let currentCharacter = input.charAt(0);
+  const reduced = [...input].reduce((accumulator, current) => {
+    if (current !== currentCharacter) {
+      const newPhrase = `${accumulator}${counter++}${currentCharacter}`;
+      counter = 1;
+      currentCharacter = current;
+      return newPhrase;
+    }
+
+    counter++;
+    return accumulator;
+  }, '');
+  return `${reduced}${counter++}${currentCharacter}`;
+};
+
+export const lookAndSayNTimes = (input: string, n: number): string => {
+  let expandedInput = input;
+  [...Array(n)].forEach(() => (expandedInput = lookAndSay(expandedInput)));
+  return expandedInput;
+};
+
+export async function p2015day10_part1(input: string): Promise<number> {
+  return lookAndSayNTimes(input, 40).length;
 }
 
-export async function p2015day10_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2015day10_part2(input: string): Promise<number> {
+  return lookAndSayNTimes(input, 50).length;
 }
 
 async function runTests() {

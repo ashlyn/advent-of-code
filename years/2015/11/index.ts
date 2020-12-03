@@ -4,8 +4,9 @@ import chalk from 'chalk';
 import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
+import { p2015day1_part1 } from '../01';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2015;
 const DAY = 11;
@@ -16,12 +17,64 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2015/11/data.txt
 // problem url : https://adventofcode.com/2015/day/11
 
-export async function p2015day11_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+const disallowedCharacters = /[iol]/g;
+const pairPattern = /(.)\1.*?((?!\1).)\2/g;
+
+const minCharCode = 'a'.charCodeAt(0);
+const maxCharCode = 'z'.charCodeAt(0) + 1;
+export const incrementPassword = (password: string): string => {
+  let carry = 1;
+  const charCodes = [...password]
+    .reverse()
+    .map(letter => {
+      if (!carry) return letter.charCodeAt(0);
+
+      let newDigit = (letter.charCodeAt(0) + carry) % maxCharCode;
+      if (newDigit < minCharCode) {
+        newDigit += minCharCode;
+        carry = 1;
+      } else {
+        carry = 0;
+      }
+      return newDigit;
+    })
+    .reverse();
+  const newPassword = charCodes.map(c => String.fromCharCode(c)).join('');
+  if (carry) return `a${newPassword}`;
+  return newPassword;
+};
+
+export const hasStraight = (password: string): boolean => {
+  const diffs = [...password].reduce((accumulator, currentLetter, index, pw) => {
+    return `${accumulator} ${currentLetter.charCodeAt(0) - pw[index === 0 ? 0 : index - 1].charCodeAt(0)}`;
+  }, '');
+  return diffs.includes(' 1 1 ');
+};
+
+export const isValidPassword = (password: string): boolean => {
+  const hasDisallowedCharacters = !disallowedCharacters.test(password);
+  const hasStraightOfCharacters = hasStraight(password);
+  const hasAtLeastTwoDistinctPairs = pairPattern.test(password);
+  return hasDisallowedCharacters && hasStraightOfCharacters && hasAtLeastTwoDistinctPairs;
+};
+
+const getValidPassword = (input: string): string => {
+  let password = input;
+  while (!isValidPassword(password)) {
+    password = incrementPassword(password);
+  }
+  return password;
+};
+
+let firstValidPassword: string;
+export async function p2015day11_part1(input: string): Promise<string> {
+  firstValidPassword = getValidPassword(input);
+  return firstValidPassword;
 }
 
-export async function p2015day11_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2015day11_part2(input: string): Promise<string> {
+  if (!firstValidPassword) await p2015day1_part1(input);
+  return getValidPassword(firstValidPassword);
 }
 
 async function runTests() {
