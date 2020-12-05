@@ -28,38 +28,18 @@ enum Directions {
   Left = 'L',
 }
 
-const maxRowIndex = 127;
-const maxColumnIndex = 7;
-
-const numRowCharacters = 7;
+const codeRowCount = 7;
 
 const getSeatId = ({ row, column }: Seat): number => row * 8 + column;
 
-// Only after completing did I realize the codes can simply be converted to binary
-// TODO: refactor to use the binary codes
 const getSeat = (input: string): Seat => {
-  let minRow = 0;
-  let maxRow = maxRowIndex;
-  let minCol = 0;
-  let maxCol = maxColumnIndex;
-  [...input].forEach((c, i) => {
-    if (c === Directions.Front) {
-      maxRow = Math.floor(maxRow - (maxRow - minRow) / 2);
-    } else if (c === Directions.Back) {
-      minRow = Math.ceil(minRow + (maxRow - minRow) / 2);
-    } else if (c === Directions.Left) {
-      maxCol = Math.floor(maxCol - (maxCol - minCol) / 2);
-    } else if (c === Directions.Right) {
-      minCol = Math.ceil(minCol + (maxCol - minCol) / 2);
-    }
-  });
-
-  const row = input.charAt(numRowCharacters - 1) === Directions.Front ? minRow : maxRow;
-  const col = input.charAt(numRowCharacters) === Directions.Left ? minCol : maxCol;
+  const binaryInput = input
+    .replace(new RegExp(`(${Directions.Front}|${Directions.Left})`, 'g'), '0')
+    .replace(new RegExp(`(${Directions.Back}|${Directions.Right})`, 'g'), '1');
 
   return {
-    row: row,
-    column: col,
+    row: parseInt(binaryInput.substring(0, codeRowCount), 2),
+    column: parseInt(binaryInput.substring(codeRowCount), 2),
   };
 };
 
@@ -85,7 +65,6 @@ async function runTests() {
     test.logTestResult(testCase, String(await p2020day5_part1(testCase.input)));
   }
   test.beginSection();
-  const input = await util.getInput(DAY, YEAR);
   for (const testCase of part2Tests) {
     test.logTestResult(testCase, String(await p2020day5_part2(testCase.input)));
   }
