@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 6;
@@ -16,12 +16,32 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/06/data.txt
 // problem url : https://adventofcode.com/2020/day/6
 
-export async function p2020day6_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day6_part1(input: string): Promise<number> {
+  const groups = input
+    .split('\n\n')
+    .map(group => group.replace(/\s/g, ''))
+    .map(group => new Set([...group]))
+    .map(set => set.size);
+  const sum = groups.reduce((a, b) => a + b, 0);
+  return sum;
 }
 
-export async function p2020day6_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day6_part2(input: string): Promise<number> {
+  const aCharCode = 'a'.charCodeAt(0);
+  const groups = input
+    .split('\n\n')
+    .map(group => group.split('\n'))
+    .map(group => {
+      const frequencies = new Array(26).fill(0);
+      group.forEach(([...person]) => {
+        person.forEach(answer => {
+          const answerIndex = answer.charCodeAt(0) - aCharCode;
+          frequencies[answerIndex] = frequencies[answerIndex] + 1;
+        });
+      });
+      return frequencies.filter(f => f === group.length).length;
+    });
+  return groups.reduce((a, b) => a + b, 0);
 }
 
 async function runTests() {
