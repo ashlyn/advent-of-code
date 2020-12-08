@@ -16,12 +16,86 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/08/data.txt
 // problem url : https://adventofcode.com/2020/day/8
 
-export async function p2020day8_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export enum Operation {
+  Jump = 'jmp',
+  Accumulate = 'acc',
+  Nop = 'nop',
 }
 
-export async function p2020day8_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+type Instruction = {
+  operation: Operation;
+  value: number;
+  executed: boolean;
+};
+
+type Results = {
+  accumulator: number;
+  terminated: boolean;
+};
+
+const instructionPattern = /(jmp|acc|nop) ([+-]\d+)/;
+
+const parseInstruction = (line: string): Instruction => {
+  const [, operation, value] = [...(instructionPattern.exec(line) || [])];
+  return {
+    operation: operation as Operation,
+    value: parseInt(value),
+    executed: false,
+  };
+};
+
+export const executeInstructions = (originalInstructions: Instruction[]): Results => {
+  const instructions = originalInstructions.map(i => ({ ...i }));
+  let accumulator = 0;
+  let i = 0;
+  let instruction = instructions[i];
+  while (i < instructions.length && !instruction.executed) {
+    const { operation, value } = instruction;
+    instruction.executed = true;
+    switch (operation) {
+      case Operation.Jump:
+        i += value;
+        break;
+      case Operation.Accumulate:
+        accumulator += value;
+        ++i;
+        break;
+      case Operation.Nop:
+      default:
+        ++i;
+    }
+    instruction = instructions[i];
+  }
+  return {
+    accumulator: accumulator,
+    terminated: i >= instructions.length,
+  };
+};
+
+const findAndFixCorruptedInstruction = (instructions: Instruction[]): number => {
+  let accumulator = -1;
+  instructions.some(({ operation, value }, i) => {
+    if (operation === Operation.Accumulate) return false;
+    const newInstructions = [
+      ...instructions.slice(0, i),
+      { operation: operation === Operation.Jump ? Operation.Nop : Operation.Jump, value: value, executed: false },
+      ...instructions.slice(i + 1),
+    ];
+    const { terminated, accumulator: resultAccumulator } = executeInstructions(newInstructions);
+    if (terminated) accumulator = resultAccumulator;
+    return terminated;
+  });
+  return accumulator;
+};
+
+export async function p2020day8_part1(input: string): Promise<number> {
+  const instructions = input.split('\n').map(parseInstruction);
+  return executeInstructions(instructions).accumulator;
+}
+
+export async function p2020day8_part2(input: string): Promise<number> {
+  const instructions = input.split('\n').map(parseInstruction);
+  return findAndFixCorruptedInstruction(instructions);
 }
 
 async function runTests() {
