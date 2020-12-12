@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 10;
@@ -16,12 +16,56 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/10/data.txt
 // problem url : https://adventofcode.com/2020/day/10
 
-export async function p2020day10_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+const maxDiffInJolts = 3;
+const minDiffInJolts = 1;
+
+const buildDiffChain = (input: number[]): number[] => {
+  return [
+    ...input
+      .sort((a, b) => a - b)
+      .map((value, index, arr) => {
+        if (index === 0) return value;
+        return value - arr[index - 1];
+      }),
+    3,
+  ];
+};
+
+const allValidJoltDiffs = [1, 2, 3];
+const countAllValidChains = (input: number[], currentIndex: number, dynamicArr: number[] | null): number => {
+  if (!dynamicArr) dynamicArr = Array(input.length);
+  if (dynamicArr[currentIndex]) return dynamicArr[currentIndex];
+
+  let paths = 0;
+  const currentValue = input[currentIndex];
+  if (currentValue <= maxDiffInJolts) paths = 1;
+
+  allValidJoltDiffs.forEach(diff => {
+    const neighbor = currentIndex - diff;
+    if (neighbor >= 0 && input[neighbor] >= currentValue - maxDiffInJolts) {
+      paths += countAllValidChains(input, neighbor, dynamicArr);
+    }
+  });
+
+  dynamicArr[currentIndex] = paths;
+
+  return paths;
+};
+
+export async function p2020day10_part1(input: string): Promise<number> {
+  const numbers = input.split('\n').map(i => parseInt(i));
+  const diffs = buildDiffChain(numbers);
+  return diffs.filter(i => i === 1).length * diffs.filter(i => i === 3).length;
 }
 
-export async function p2020day10_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day10_part2(input: string): Promise<number> {
+  const numbers = input.split('\n').map(i => parseInt(i));
+  // const validSubsets = filterToValidSubsets(findAllSubsets(numbers));
+  return countAllValidChains(
+    numbers.sort((a, b) => a - b),
+    numbers.length - 1,
+    null
+  );
 }
 
 async function runTests() {

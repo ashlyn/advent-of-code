@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 8;
