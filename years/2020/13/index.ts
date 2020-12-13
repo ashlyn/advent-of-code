@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 13;
@@ -16,12 +16,61 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/13/data.txt
 // problem url : https://adventofcode.com/2020/day/13
 
-export async function p2020day13_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+type BusOffset = {
+  id: number;
+  waitTime: number;
+};
+
+const findFirstBus = (earliest: number, busses: number[]): BusOffset => {
+  const mapped = busses.map(b => b * (Math.floor(earliest / b) + 1));
+  const index = mapped.indexOf(Math.min(...mapped));
+  return { id: busses[index], waitTime: mapped[index] - earliest };
+};
+
+const moduloInverse = (value: bigint, mod: bigint): bigint => {
+  const remainder = value % mod;
+  for (let i = 1n; i < mod; i++) {
+    if ((remainder * i) % mod === 1n) return i;
+  }
+  return 1n;
+};
+
+const crt = (busses: BusOffset[]): bigint => {
+  const product = busses.reduce((a, { id }) => a * BigInt(id), 1n);
+  const sum = busses.reduce((a, { id, waitTime }) => {
+    const p = product / BigInt(id);
+    return a + BigInt(waitTime) * moduloInverse(p, BigInt(id)) * p;
+  }, 0n);
+  return sum % product;
+};
+
+const findMinimumTimestamp = (busses: BusOffset[]): bigint => {
+  const product = busses.reduce((a, { id }) => a * BigInt(id), 1n);
+  console.log(product);
+  return product - crt(busses);
+};
+
+export async function p2020day13_part1(input: string): Promise<number> {
+  const split = input.split('\n');
+  const busses = split[1]
+    .split(',')
+    .filter(i => i !== 'x')
+    .map(i => parseInt(i));
+  const { id, waitTime } = findFirstBus(parseInt(split[0]), busses);
+  return id * waitTime;
 }
 
-export async function p2020day13_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day13_part2(input: string): Promise<bigint> {
+  const split = input.split('\n');
+  const busses = split[1].split(',').map((id, i) => {
+    if (id === 'x') return null;
+    return {
+      id: parseInt(id),
+      waitTime: i,
+    };
+  });
+  const bussesFiltered: BusOffset[] = busses.filter((b): b is BusOffset => b !== null);
+  return findMinimumTimestamp(bussesFiltered);
 }
 
 async function runTests() {
