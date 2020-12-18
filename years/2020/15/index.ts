@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 15;
@@ -16,12 +16,33 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/15/data.txt
 // problem url : https://adventofcode.com/2020/day/15
 
-export async function p2020day15_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+const playGame = (startingNumbers: number[], max: number): number => {
+  const lastSaid: Map<number, number> = new Map();
+  let last = 0;
+  for (let i = 1; i <= max; i++) {
+    if (i - 1 < startingNumbers.length) {
+      if (i > 1) lastSaid.set(last, i - 1);
+      last = startingNumbers[i - 1];
+    } else if (lastSaid.has(last)) {
+      const lastRound = lastSaid.get(last);
+      lastSaid.set(last, i - 1);
+      last = i - 1 - (lastRound as number);
+    } else {
+      lastSaid.set(last, i - 1);
+      last = 0;
+    }
+  }
+  return last;
+};
+
+export async function p2020day15_part1(input: string): Promise<number> {
+  const startingNumbers = input.split(',').map(i => parseInt(i));
+  return playGame(startingNumbers, 2020);
 }
 
-export async function p2020day15_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day15_part2(input: string): Promise<number> {
+  const startingNumbers = input.split(',').map(i => parseInt(i));
+  return playGame(startingNumbers, 30000000);
 }
 
 async function runTests() {

@@ -46,7 +46,6 @@ const crt = (busses: BusOffset[]): bigint => {
 
 const findMinimumTimestamp = (busses: BusOffset[]): bigint => {
   const product = busses.reduce((a, { id }) => a * BigInt(id), 1n);
-  console.log(product);
   return product - crt(busses);
 };
 

@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 14;
@@ -16,12 +16,116 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/14/data.txt
 // problem url : https://adventofcode.com/2020/day/14
 
-export async function p2020day14_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+enum InstructionType {
+  UpdateMask,
+  SaveToMemory,
 }
 
-export async function p2020day14_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+type Instruction = {
+  instruction: InstructionType;
+  value: number | string;
+  index?: number;
+};
+
+const parseInstructions = (input: string): Instruction[] => {
+  return input.split('\n').map(line => {
+    const parts = line.split(' = ');
+    if (parts[0].startsWith('mask')) {
+      return {
+        instruction: InstructionType.UpdateMask,
+        value: parts[1],
+      };
+    }
+
+    return {
+      instruction: InstructionType.SaveToMemory,
+      value: parseInt(parts[1]),
+      index: parseInt(parts[0].substring(4, parts[0].length - 1)),
+    };
+  });
+};
+
+const BITS = 36;
+
+const permutationMap: Map<number, string[]> = new Map();
+const generatePermutationsForLength = (length: number): string[] => {
+  if (permutationMap.has(length)) return permutationMap.get(length) || [];
+
+  const permutations = [...Array(Math.pow(2, length)).keys()].map(i => i.toString(2).padStart(length, '0'));
+  permutationMap.set(length, permutations);
+  return permutations;
+};
+
+const getMaskedValue = (value: number, mask: string): number => {
+  const valAsBinary = value.toString(2).padStart(BITS, '0');
+  const masked = [...mask]
+    .map((m, i) => {
+      if (m === 'X') return valAsBinary.charAt(i);
+      return m;
+    })
+    .join('');
+  return parseInt(masked, 2);
+};
+
+export const getMaskedIndexes = (index: number, mask: string): number[] => {
+  const permutations = generatePermutationsForLength([...mask].filter(m => m === 'X').length);
+
+  const indexAsBinary = index.toString(2).padStart(BITS, '0');
+
+  return permutations.map(permutation => {
+    let xCount = 0;
+    const addressAsBinary = [...mask]
+      .map((m, i) => {
+        if (m === '0') return indexAsBinary.charAt(i);
+        if (m === '1') return '1';
+
+        const currentCharacter = permutation.charAt(xCount);
+        ++xCount;
+        return currentCharacter;
+      })
+      .join('');
+    return parseInt(addressAsBinary, 2);
+  });
+};
+
+const singleIndex = (index: number): number[] => [index];
+
+const unmaskedValue = (value: number): number => value;
+
+const executeInstructions = (
+  instructions: Instruction[],
+  indexGenerator: (index: number, mask: string) => number[],
+  valueGenerator: (value: number, mask: string) => number
+): Map<number, number> => {
+  let mask = '';
+  const mem: Map<number, number> = new Map();
+  instructions.forEach(instruction => {
+    if (instruction.instruction === InstructionType.UpdateMask) {
+      mask = instruction.value as string;
+      return;
+    }
+
+    if (instruction.instruction === InstructionType.SaveToMemory) {
+      const value = valueGenerator(instruction.value as number, mask);
+      if (instruction.index === undefined) return;
+      const indexes = indexGenerator(instruction.index, mask);
+      indexes.forEach(i => mem.set(i, value));
+      return;
+    }
+  });
+  return mem;
+};
+
+export async function p2020day14_part1(input: string): Promise<number> {
+  const instructions = parseInstructions(input);
+  const mem = executeInstructions(instructions, singleIndex, getMaskedValue);
+  return [...mem.values()].reduce((a, b) => a + b, 0);
+}
+
+export async function p2020day14_part2(input: string): Promise<number> {
+  const instructions = parseInstructions(input);
+  const mem = executeInstructions(instructions, getMaskedIndexes, unmaskedValue);
+  return [...mem.values()].reduce((a, b) => a + b, 0);
 }
 
 async function runTests() {

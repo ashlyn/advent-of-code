@@ -4,8 +4,6 @@ import chalk from 'chalk';
 import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
-import { emit } from 'process';
-import { SetAccessorDeclaration } from 'typescript';
 
 const { log, logSolution } = LOGUTIL;
 

@@ -3,10 +3,6 @@ import { part1Tests, part2Tests } from './testCases';
 
 describe('2020 Day 17', () => {
   describe('Part 1 Solution', () => {
-    it('has a test case so Jest works as expected', () => {
-      expect(true).toEqual(true);
-    });
-
     part1Tests.forEach(testCase => {
       it(`${testCase.description}`, async () => {
         const actual = String(await p2020day17_part1(testCase.input));
@@ -15,11 +11,8 @@ describe('2020 Day 17', () => {
     });
   });
 
+  /* Uncomment to run Part 2 (long-running)
   describe('Part 2 Solution', () => {
-    it('has a test case so Jest works as expected', () => {
-      expect(true).toEqual(true);
-    });
-
     part2Tests.forEach(testCase => {
       it(`${testCase.description}`, async () => {
         const actual = String(await p2020day17_part2(testCase.input));
@@ -27,4 +20,5 @@ describe('2020 Day 17', () => {
       });
     });
   });
+  */
 });
