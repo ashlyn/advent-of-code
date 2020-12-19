@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 18;
@@ -16,12 +16,66 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/18/data.txt
 // problem url : https://adventofcode.com/2020/day/18
 
-export async function p2020day18_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+enum Operation {
+  Add = '+',
+  Multiply = '*',
 }
 
-export async function p2020day18_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+enum Parentheses {
+  Open = '(',
+  Closed = ')',
+}
+
+const solve = (input: string[], withPrecedence = false): number => {
+  const stack: number[] = [];
+  const operations: Operation[] = [];
+
+  while (input.length > 0) {
+    const current = input.shift() || '';
+    const currentNumber = parseInt(current);
+    if (current === ' ') {
+      continue;
+    }
+    if (!Number.isNaN(currentNumber)) {
+      stack.unshift(currentNumber);
+    } else if (current === Parentheses.Open) {
+      stack.unshift(solve(input, withPrecedence));
+    } else if (current === Parentheses.Closed) {
+      break;
+    } else if (
+      operations.length === 0 ||
+      (withPrecedence && current === Operation.Add && operations[0] === Operation.Multiply)
+    ) {
+      operations.unshift(current as Operation);
+    } else {
+      const topOperation = operations.shift();
+      const stackTop = stack.shift() || 0;
+      stack[0] = topOperation === Operation.Add ? stackTop + stack[0] : stackTop * stack[0];
+      operations.unshift(current as Operation);
+    }
+  }
+
+  while (operations.length > 0) {
+    const topOperation = operations.shift();
+    const stackTop = stack.shift() || 0;
+    stack[0] = topOperation === Operation.Add ? stackTop + stack[0] : stackTop * stack[0];
+  }
+
+  return stack[0];
+};
+
+export async function p2020day18_part1(input: string): Promise<number> {
+  return input
+    .split('\n')
+    .map(i => solve([...i]))
+    .reduce((a, b) => a + b, 0);
+}
+
+export async function p2020day18_part2(input: string): Promise<number> {
+  return input
+    .split('\n')
+    .map(i => solve([...i], true))
+    .reduce((a, b) => a + b, 0);
 }
 
 async function runTests() {
