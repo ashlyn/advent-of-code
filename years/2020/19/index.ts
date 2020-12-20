@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 19;
@@ -16,12 +16,131 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/19/data.txt
 // problem url : https://adventofcode.com/2020/day/19
 
-export async function p2020day19_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+enum PatternCharacter {
+  A = 'a',
+  B = 'b',
 }
 
-export async function p2020day19_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+type Or = {
+  Option1: number[];
+  Option2: number[];
+};
+
+type Rule = PatternCharacter | number[] | Or;
+
+const buildRules = (input: string): Map<number, Rule> => {
+  const rules: Map<number, Rule> = new Map();
+  input.split('\n').forEach(ruleStr => {
+    const parts = ruleStr.split(': ');
+    const index = parseInt(parts[0]);
+
+    if (parts[1].includes(`"${PatternCharacter.A}"`)) {
+      rules.set(index, PatternCharacter.A);
+      return;
+    }
+
+    if (parts[1].includes(`"${PatternCharacter.B}"`)) {
+      rules.set(index, PatternCharacter.B);
+      return;
+    }
+
+    const options = parts[1].split(' | ').map(o => {
+      return o.split(' ').map(r => parseInt(r));
+    });
+    if (options.length === 1) {
+      rules.set(index, options[0]);
+      return;
+    }
+
+    rules.set(index, { Option1: options[0], Option2: options[1] });
+  });
+  return rules;
+};
+
+const matchPatternForRule = (
+  pattern: string,
+  rules: Map<number, Rule>,
+  ruleIndex: number
+): { result: boolean; charsMatchedSoFar: number } => {
+  const rule = rules.get(ruleIndex);
+  if (!rule) {
+    return { result: false, charsMatchedSoFar: 0 };
+  }
+
+  if (pattern.charAt(0) === rule) return { result: true, charsMatchedSoFar: 1 };
+
+  if (typeof rule === 'string') return { result: false, charsMatchedSoFar: 0 };
+
+  const ruleOptions = Array.isArray(rule) ? [rule] : [rule.Option1, rule.Option2];
+
+  for (const option of ruleOptions) {
+    let i = 0;
+    let matches = true;
+    for (const index of option) {
+      const { result, charsMatchedSoFar } = matchPatternForRule(pattern.substring(i), rules, index);
+      if (!result) {
+        matches = false;
+        break;
+      }
+      i = i + charsMatchedSoFar;
+    }
+    if (matches) return { result: true, charsMatchedSoFar: i };
+  }
+
+  return { result: false, charsMatchedSoFar: 0 };
+};
+
+const matchPatternsForRule = (patternInput: string, rules: Map<number, Rule>): string[] => {
+  return patternInput.split('\n').filter(p => {
+    const { result, charsMatchedSoFar: charCount } = matchPatternForRule(p, rules, 0);
+    return result && charCount == p.length;
+  });
+};
+
+const matchPatternsForRuleWithLoops = (patternInput: string, rules: Map<number, Rule>): string[] => {
+  // basing on assumption that 0: 8 11
+  const left = 42;
+  const right = 31;
+  rules.set(8, { Option1: [left], Option2: [left, 8] });
+  rules.set(11, { Option1: [left, right], Option2: [left, 11, right] });
+
+  return patternInput.split('\n').filter(p => {
+    let currentIndex = 0;
+    const currentMatches: Map<number, number> = new Map();
+    let currentRule = left;
+    while (currentIndex < p.length) {
+      const { result, charsMatchedSoFar } = matchPatternForRule(p.substring(currentIndex), rules, currentRule);
+      if (result) {
+        currentMatches.set(currentRule, (currentMatches.get(currentRule) || 0) + 1);
+      } else if (currentRule === left) {
+        currentRule = right;
+      } else {
+        break;
+      }
+      currentIndex += charsMatchedSoFar;
+    }
+
+    return (
+      currentIndex === p.length &&
+      currentMatches.has(right) &&
+      (currentMatches.get(left) ?? 0) > (currentMatches.get(right) ?? 0)
+    );
+  });
+};
+
+export async function p2020day19_part1(input: string): Promise<number> {
+  const [rulesInput, patternsInput] = input.split('\n\n');
+  const rules = buildRules(rulesInput);
+  const matches = matchPatternsForRule(patternsInput, rules);
+  return matches.length;
+}
+
+// 213 too low
+export async function p2020day19_part2(input: string): Promise<number> {
+  const [rulesInput, patternsInput] = input.split('\n\n');
+  const rules = buildRules(rulesInput);
+  const matches = matchPatternsForRuleWithLoops(patternsInput, rules);
+  return matches.length;
 }
 
 async function runTests() {
