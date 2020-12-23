@@ -32,17 +32,12 @@ const getFinalScore = (cards: number[]): number => {
   return cards.reduce((a, b, i) => a + (cards.length - i) * b, 0);
 };
 
-const playGame = (
-  originalCards: number[][],
-  withRecursion = false,
-  preComputedGameCache: Map<string, number> = new Map()
-): GameOutput => {
+const playGame = (originalCards: number[][], withRecursion = false): GameOutput => {
   const cardsForPlayers = [[...originalCards[0]], [...originalCards[1]]];
   const previousRounds: Set<string> = new Set();
   while (cardsForPlayers[0].length > 0 && cardsForPlayers[1].length > 0) {
     const json = JSON.stringify(cardsForPlayers);
     if (previousRounds.has(json)) {
-      preComputedGameCache.set(json, 0);
       return {
         winner: 0,
         winningHand: cardsForPlayers[0],
@@ -51,26 +46,17 @@ const playGame = (
       previousRounds.add(json);
     }
 
-    if (preComputedGameCache.has(json)) {
-      const winner = preComputedGameCache.get(json) || 0;
-      return {
-        winner: winner,
-        winningHand: cardsForPlayers[winner],
-      };
-    }
-
     const topCards = cardsForPlayers.map(c => c.shift() ?? 0);
     let roundWinner = topCards[0] > topCards[1] ? 0 : 1;
     let sortedCards: number[] = [...topCards];
     if (withRecursion && cardsForPlayers[0].length >= topCards[0] && cardsForPlayers[1].length >= topCards[1]) {
       const newCards = [[...cardsForPlayers[0].slice(0, topCards[0])], [...cardsForPlayers[1].slice(0, topCards[1])]];
-      const { winner } = playGame(newCards, withRecursion, preComputedGameCache);
+      const { winner } = playGame(newCards, withRecursion);
       roundWinner = winner;
       if (winner) sortedCards = sortedCards.reverse();
     } else {
       sortedCards = [...topCards].sort((a, b) => b - a);
     }
-    preComputedGameCache.set(json, roundWinner);
     cardsForPlayers[roundWinner] = cardsForPlayers[roundWinner].concat(sortedCards);
   }
 
