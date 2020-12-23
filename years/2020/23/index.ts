@@ -16,29 +16,46 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/23/data.txt
 // problem url : https://adventofcode.com/2020/day/23
 
-const playGame = (cups: number[], moves: number): number[] => {
-  const minValue = Math.min(...cups);
-  let index = 0;
-  for (let i = 0; i < moves; i++) {
-    // console.log(`-- move ${i + 1} --`);
-    // console.log(`cups: ${cups.map((c, i) => (i === index ? '(' + c + ')' : c)).join(' ')}`);
-    const currentCup = cups[index];
-    const threeCups = [1, 2, 3].map(j => cups[(index + j) % cups.length]);
-    // console.log(`pick up: ${threeCups.join(', ')}`);
-    cups = cups.filter(c => !threeCups.includes(c));
-    let destination = -1;
-    let target = currentCup - 1;
-    while (destination < 0) {
-      if (target < minValue) target = Math.max(...cups);
-      destination = cups.indexOf(target);
-      if (destination < 0) target--;
+const buildLinkedList = (cups: number[]): Map<number, number> => {
+  let previous: number;
+  const linkedList: Map<number, number> = new Map();
+  cups.forEach(c => {
+    if (previous) {
+      linkedList.set(previous, c);
     }
-    // console.log(`destination: ${cups[destination]} \n`);
-    cups.splice(destination + 1, 0, ...threeCups);
-    index = (cups.indexOf(currentCup) + 1) % cups.length;
+    previous = c;
+  });
+  linkedList.set(cups[cups.length - 1], cups[0]);
+  return linkedList;
+};
+
+const playGame = (cups: number[], moves: number): Map<number, number> => {
+  const linkedList = buildLinkedList(cups);
+  let currentCup = cups[0];
+  let destinationTarget: number;
+  for (let i = 0; i < moves; i++) {
+    // remove three cups and join the selected cup to the next one
+    const cup1 = linkedList.get(currentCup) ?? 1;
+    const cup2 = linkedList.get(cup1) ?? 1;
+    const cup3 = linkedList.get(cup2) ?? 1;
+    const nextCup = linkedList.get(cup3) ?? 1;
+    linkedList.set(currentCup, nextCup);
+
+    // find the destination (by value)
+    destinationTarget = currentCup - 1;
+    while (destinationTarget < 1 || [cup1, cup2, cup3].includes(destinationTarget)) {
+      destinationTarget--;
+      if (destinationTarget < 1) {
+        destinationTarget = cups.length;
+      }
+    }
+
+    // put the three cups back in the list
+    linkedList.set(cup3, linkedList.get(destinationTarget) ?? 1);
+    linkedList.set(destinationTarget, cup1);
+    currentCup = nextCup;
   }
-  const oneIndex = cups.indexOf(1);
-  return cups.map((c, i) => cups[(oneIndex + i + 1) % cups.length]);
+  return linkedList;
 };
 
 const generateMoreCups = (cups: number[], n: number): number[] => {
@@ -51,8 +68,14 @@ const generateMoreCups = (cups: number[], n: number): number[] => {
 
 export async function p2020day23_part1(input: string): Promise<string> {
   const cups = input.split('').map(i => parseInt(i));
-  const ordered = playGame(cups, 100);
-  return ordered.slice(0, ordered.length - 1).join('');
+  const linkedList = playGame(cups, 100);
+  const ordered: number[] = [];
+  let current = linkedList.get(1) ?? 1;
+  while (current !== 1) {
+    ordered.push(current);
+    current = linkedList.get(current) ?? 1;
+  }
+  return ordered.join('');
 }
 
 export async function p2020day23_part2(input: string): Promise<number> {
@@ -60,8 +83,8 @@ export async function p2020day23_part2(input: string): Promise<number> {
     input.split('').map(i => parseInt(i)),
     1000000
   );
-  const ordered = playGame(cups, 10000000);
-  return ordered[0] * ordered[1];
+  const linkedList = playGame(cups, 10000000);
+  return (linkedList.get(1) ?? 0) * (linkedList.get(linkedList.get(1) ?? 0) ?? 0);
 }
 
 async function runTests() {

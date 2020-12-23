@@ -16,210 +16,192 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/20/data.txt
 // problem url : https://adventofcode.com/2020/day/20
 
-type Coords = {
-  x: number;
-  y: number;
-};
+const TILE_SIZE = 10;
+const ASSEMBLED_TILE_SIZE = TILE_SIZE - 2;
 
-interface ITile {
-  id: number;
-  body: string[];
-  coords: Coords | null;
-  neighbors: ITile[];
-  setPotentialNeighbors: (tiles: ITile[]) => ITile[];
-  getEdges: () => string[];
-  setAdjacency: (tile: ITile) => Coords | null;
-  getBodyWithoutBorder: () => string[];
+const SEARCH_CHARACTER = '#';
+
+enum Orientation {
+  Right = 1,
+  Bottom = 2,
 }
 
-class Tile implements ITile {
+type TileOrientation = {
+  edgeIds: number[];
+  variationBody: string[];
+};
+
+type Tile = {
   id: number;
-  body: string[];
-  coords: Coords | null;
-  neighbors: ITile[];
+  originalBody: string[];
+  orientations: TileOrientation[];
+  potentialNeighbors?: Tile[];
+};
 
-  constructor(input: string) {
-    const [idLine, ...body] = input.split('\n');
-    this.body = body;
-    this.id = parseInt(idLine.substring(5, 10));
-    this.coords = null;
-    this.neighbors = [];
+type OrientedTile = {
+  id: number;
+  orientation?: TileOrientation;
+};
+
+type FindMonsterOutput = {
+  mapWithMonsters: string[];
+  monsters: number;
+  roughness: number;
+};
+
+const getEdgeId = (edge: string) => parseInt(edge.replace(/#/g, '1').replace(/\./g, '0'), 2);
+
+const parseTile = (input: string): Tile => {
+  const [idLine, ...body] = input.split('\n');
+  const id = parseInt(idLine.substring(5, 9));
+  return {
+    id: id,
+    originalBody: body,
+    orientations: buildAllOrientations(body),
+  };
+};
+
+const rotateTile = (tile: string[]): string[] => {
+  return [...tile[0]].map((_, i) =>
+    tile
+      .map(row => row[i])
+      .reverse()
+      .join('')
+  );
+};
+
+const buildAllOrientations = (tile: string[]): TileOrientation[] => {
+  const orientations: TileOrientation[] = [];
+  for (let flips = 0; flips < 2; flips++) {
+    for (let rotations = 0; rotations < 4; rotations++) {
+      const top = tile[0];
+      const bottom = tile[tile.length - 1];
+      const left = tile.map(row => row[0]).join('');
+      const right = tile.map(row => row[row.length - 1]).join('');
+      const edgeIds = [top, right, bottom, left].map(edge => getEdgeId(edge));
+      orientations.push({
+        edgeIds: edgeIds,
+        variationBody: tile.slice(1, tile.length - 1).map(row => row.substring(1, row.length - 1)),
+      });
+      tile = rotateTile(tile);
+    }
+    tile = tile.reverse();
   }
+  return orientations;
+};
 
-  private rotate = (): void => {
-    this.body = this.body.map((row, i) =>
-      [...row].map((c, j) => this.body[i].charAt(this.body.length - j - 1)).join('')
+const buildPotentialNeighbors = (tiles: Tile[]): void => {
+  tiles.forEach(currentTile => {
+    const potentialNeighbors = tiles.filter(
+      t =>
+        t !== currentTile &&
+        t.orientations[0].edgeIds.some(id => currentTile.orientations.some(t => t.edgeIds.some(edge => edge === id)))
     );
-  };
-
-  public getBodyWithoutBorder = (): string[] => {
-    return this.body.slice(1, this.body.length - 1).map(row => row.substring(1, row.length - 1));
-  };
-
-  public getEdges = (): string[] => {
-    const top = this.body[0];
-    const bottom = this.body[this.body.length - 1];
-    const left = this.body.map(row => row.charAt(0)).join('');
-    const right = this.body.map(row => row.charAt(row.length - 1)).join('');
-
-    const originals = [top, bottom, left, right];
-    const flipped = originals.map(o => [...o].reverse().join(''));
-    return [...originals, ...flipped];
-  };
-
-  public setPotentialNeighbors = (tiles: ITile[]): ITile[] => {
-    if (this.neighbors.length > 0) return this.neighbors;
-    const neighbors = tiles.filter(t => {
-      if (t.id === this.id) return false;
-      const edges = t.getEdges();
-      return this.getEdges().find(e => edges.includes(e));
-    });
-    this.neighbors = neighbors;
-    return neighbors;
-  };
-
-  public setAdjacency = (tile: ITile): Coords | null => {
-    if (!tile.coords) return null;
-
-    for (let i = 0; i <= 4; i++) {
-      if (tile.body[0] === this.body[this.body.length]) {
-        this.coords = { x: tile.coords.x, y: tile.coords.y - 1 };
-        return this.coords;
-      }
-
-      if (tile.body[0] === this.body[0]) {
-        this.body = this.body.reverse();
-        this.coords = { x: tile.coords.x, y: tile.coords.y - 1 };
-        return this.coords;
-      }
-
-      if (tile.body[tile.body.length - 1] === this.body[0]) {
-        this.coords = { x: tile.coords.x, y: tile.coords.y + 1 };
-        return this.coords;
-      }
-
-      if (tile.body[tile.body.length - 1] === this.body[this.body.length - 1]) {
-        this.body = this.body.reverse();
-        this.coords = { x: tile.coords.x, y: tile.coords.y + 1 };
-        return this.coords;
-      }
-
-      const tileLeft = tile.body.map(row => row.charAt(0)).join('');
-      const thisRight = this.body.map(row => row.charAt(row.length - 1)).join('');
-      if (tileLeft === thisRight) {
-        this.coords = { x: tile.coords.x - 1, y: tile.coords.y };
-        return this.coords;
-      }
-
-      const tileRight = tile.body.map(row => row.charAt(row.length - 1)).join('');
-      const thisLeft = this.body.map(row => row.charAt(0)).join('');
-
-      if (tileLeft === thisLeft) {
-        this.body = this.body.map(row => [...row].reverse().join(''));
-        this.coords = { x: tile.coords.x - 1, y: tile.coords.y };
-        return this.coords;
-      }
-
-      if (tileRight === thisLeft) {
-        this.coords = { x: tile.coords.x + 1, y: tile.coords.y };
-        return this.coords;
-      }
-
-      if (tileRight === thisRight) {
-        this.body = this.body.map(row => [...row].reverse().join(''));
-        this.coords = { x: tile.coords.x + 1, y: tile.coords.y };
-        return this.coords;
-      }
-
-      this.rotate();
-    }
-
-    return null;
-  };
-}
-
-const setAllCoords = (tiles: ITile[]): ITile[] => {
-  tiles[0].coords = { x: 0, y: 0 };
-  while (tiles.some(t => !t.coords)) {
-    const current = tiles.find(t => !t.coords);
-    const withCoords = tiles.filter(t => t.coords);
-    withCoords.some(t => current?.setAdjacency(t));
-  }
-  return tiles;
+    currentTile.potentialNeighbors = potentialNeighbors;
+  });
 };
 
-const assemble = (tiles: ITile[]): string[] => {
-  const dimension = Math.sqrt(tiles.length);
-  tiles.forEach(t => t.setPotentialNeighbors(tiles));
-  const corners = tiles.filter(t => t.neighbors.length === 2);
+const createMatchingFunction = (tiles: Tile[]) => (
+  tile: OrientedTile | undefined,
+  orientation: Orientation
+): OrientedTile | undefined => {
+  if (!tile) return;
+  const currentTile = tiles.find(t => t.id === tile.id);
+  if (!currentTile || !currentTile.potentialNeighbors) return;
+  return currentTile.potentialNeighbors
+    .map(neighbor => {
+      return {
+        id: neighbor.id,
+        orientation: neighbor.orientations.find(
+          v => tile.orientation?.edgeIds[orientation] === v.edgeIds[orientation ^ 2]
+        ),
+      };
+    })
+    .find(t => t.orientation !== undefined);
+};
 
-  for (let y = 0; y < dimension; y++) {
-    for (let x = 0; x < dimension; x++) {
-      let current: ITile | undefined;
-      if (x === 0 && y === 0) {
-        current = corners[2];
-      } else {
-        const left = tiles.find(t => t.coords?.x === x - 1 && t.coords?.y === y);
-        const top = tiles.find(t => t.coords?.x === x && t.coords?.y === y - 1);
-        const topEdge = y === 0;
-        const bottomEdge = y === dimension - 1;
-        const leftEdge = x === 0;
-        const rightEdge = x === dimension - 1;
+const orientAndAssemble = (tiles: Tile[]): string[][] => {
+  const matchingFunction = createMatchingFunction(tiles);
+  const startingCorner = tiles.filter(t => t.potentialNeighbors?.length === 2)[0];
+  const cornerEdges = startingCorner.potentialNeighbors?.flatMap(n => n.orientations.flatMap(v => v.edgeIds));
+  const topLeft = startingCorner.orientations.find(({ edgeIds: [, right, bottom] }) =>
+    [bottom, right].every(e => cornerEdges?.includes(e))
+  );
+  let currentTile: OrientedTile | undefined = { id: startingCorner.id, orientation: topLeft };
+  const orientedTiles: Array<Array<OrientedTile | undefined>> = [[]];
+  while (currentTile) {
+    orientedTiles[orientedTiles.length - 1].push(currentTile);
+    currentTile = matchingFunction(currentTile, Orientation.Right);
+    if (!currentTile) {
+      const topTile = orientedTiles[orientedTiles.length - 1][0];
+      currentTile = matchingFunction(topTile, Orientation.Bottom);
+      if (currentTile) {
+        orientedTiles.push([]);
+      }
+    }
+  }
 
-        const isEdge = leftEdge || rightEdge || topEdge || bottomEdge;
-        const isCorner = (leftEdge || rightEdge) && (topEdge || bottomEdge);
+  const assembled = [...new Array(orientedTiles.length * ASSEMBLED_TILE_SIZE)].map((_, y) => {
+    return [...new Array(orientedTiles[0].length * ASSEMBLED_TILE_SIZE)].map((_, x) => {
+      return (
+        orientedTiles[y >> 3][x >> 3]?.orientation?.variationBody[y & (ASSEMBLED_TILE_SIZE - 1)].charAt(
+          x & (ASSEMBLED_TILE_SIZE - 1)
+        ) || ''
+      );
+    });
+  });
 
-        if (!left && !top) {
-          return [];
+  return assembled;
+};
+
+const findMonsters = (assembledMap: string[][]): FindMonsterOutput | undefined => {
+  const monster = ['                  # ', '#    ##    ##    ###', ' #  #  #  #  #  #   '].map(row => row.split(''));
+  const coordinatesForMonster = monster.flatMap((row, y) => {
+    return row.reduce((coords, cell, x) => (cell === '#' ? [...coords, [x, y]] : coords), [] as number[][]);
+  });
+  let monsterCount = 0;
+  for (let flips = 0; flips < 2; flips++) {
+    for (let rotations = 0; rotations < 4; rotations++) {
+      for (let y = 0; y < assembledMap.length - monster.length; y++) {
+        for (let x = 0; x < assembledMap[0].length - monster[0].length; x++) {
+          if (coordinatesForMonster.every(([dx, dy]) => assembledMap[y + dy][x + dx] === SEARCH_CHARACTER)) {
+            // replace to not double-count monster characters
+            coordinatesForMonster.forEach(([dx, dy]) => (assembledMap[y + dy][x + dx] = 'O'));
+            monsterCount++;
+          }
         }
-
-        current = tiles.find(
-          t =>
-            !t.coords &&
-            (!left || t.neighbors.includes(left)) &&
-            (!top || t.neighbors.includes(top)) &&
-            (!isEdge || t.neighbors.length <= 3) &&
-            (!isCorner || t.neighbors.length == 2)
-        );
       }
-
-      if (!current) {
-        return [];
-      }
-
-      current.coords = { x: x, y: y };
+      if (monsterCount) break;
+      assembledMap = rotateTile(assembledMap.map(row => row.join(''))).map(row => row.split(''));
     }
+    assembledMap.reverse();
   }
-
-  let complete: string[] = [];
-  for (let y = 0; y < dimension; y++) {
-    for (let x = 0; x < dimension; x++) {
-      const current = tiles
-        .filter(t => t.coords?.y === y)
-        .sort((a, b) => (a.coords?.x || 0) - (a.coords?.y || 0))
-        .map(t => t.getBodyWithoutBorder());
-      const fullRows = current[0].map((row, i) => current.map(x => x[i]).join(''));
-      complete = [...complete, ...fullRows];
-    }
+  if (monsterCount) {
+    return {
+      mapWithMonsters: assembledMap.map(row => row.join('')),
+      monsters: monsterCount,
+      roughness: assembledMap
+        .map(row => row.filter(character => character === '#').length)
+        .reduce((sum, v) => sum + v, 0),
+    };
   }
-
-  return complete;
 };
 
 export async function p2020day20_part1(input: string): Promise<number> {
-  const tiles = input.split('\n\n').map(i => new Tile(i));
-  tiles.forEach(t => t.setPotentialNeighbors(tiles));
-  const corners = tiles.filter(t => t.neighbors.length === 2);
-  return corners.reduce((a, t) => a * t.id, 1);
+  const tiles = input.split('\n\n').map(parseTile);
+  buildPotentialNeighbors(tiles);
+  const corners = tiles.filter(t => t.potentialNeighbors?.length === 2);
+  return corners.reduce((a, b) => a * b.id, 1);
 }
 
-// 32685 too high
-// 32445
-export async function p2020day20_part2(input: string): Promise<string | undefined> {
-  const tiles = input.split('\n\n').map(i => new Tile(i));
-  const assembled = assemble(tiles).join('\n');
-  const poundSigns = [...assembled].filter(a => a === '#').length;
-  return 'Not implemented';
+export async function p2020day20_part2(input: string): Promise<number> {
+  const tiles = input.split('\n\n').map(parseTile);
+  buildPotentialNeighbors(tiles);
+  const assembled = orientAndAssemble(tiles);
+  const output = findMonsters(assembled);
+  if (!output) return 0;
+  const { roughness } = output;
+  return roughness;
 }
 
 async function runTests() {
