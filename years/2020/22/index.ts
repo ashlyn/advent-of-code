@@ -5,7 +5,7 @@ import * as LOGUTIL from '../../../util/log';
 import { performance } from 'perf_hooks';
 import { part1Tests, part2Tests } from './testCases';
 
-const { log, logSolution, trace } = LOGUTIL;
+const { log, logSolution } = LOGUTIL;
 
 const YEAR = 2020;
 const DAY = 22;
@@ -16,12 +16,83 @@ LOGUTIL.setDebug(DEBUG);
 // data path  : /Users/ashlyn.slawnyk/workspace/advent-of-code/years/2020/22/data.txt
 // problem url : https://adventofcode.com/2020/day/22
 
-export async function p2020day22_part1(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+type GameOutput = {
+  winner: number; // 0 or 1 (index)
+  winningHand: number[];
+};
+
+const parseInput = (input: string): number[][] => {
+  return input.split('\n\n').map(player => {
+    const [, ...cards] = player.split('\n');
+    return cards.map(c => parseInt(c));
+  });
+};
+
+const getFinalScore = (cards: number[]): number => {
+  return cards.reduce((a, b, i) => a + (cards.length - i) * b, 0);
+};
+
+const playGame = (
+  originalCards: number[][],
+  withRecursion = false,
+  preComputedGameCache: Map<string, number> = new Map()
+): GameOutput => {
+  const cardsForPlayers = [[...originalCards[0]], [...originalCards[1]]];
+  const previousRounds: Set<string> = new Set();
+  while (cardsForPlayers[0].length > 0 && cardsForPlayers[1].length > 0) {
+    const json = JSON.stringify(cardsForPlayers);
+    if (previousRounds.has(json)) {
+      preComputedGameCache.set(json, 0);
+      return {
+        winner: 0,
+        winningHand: cardsForPlayers[0],
+      };
+    } else {
+      previousRounds.add(json);
+    }
+
+    if (preComputedGameCache.has(json)) {
+      const winner = preComputedGameCache.get(json) || 0;
+      return {
+        winner: winner,
+        winningHand: cardsForPlayers[winner],
+      };
+    }
+
+    const topCards = cardsForPlayers.map(c => c.shift() ?? 0);
+    let roundWinner = topCards[0] > topCards[1] ? 0 : 1;
+    let sortedCards: number[] = [...topCards];
+    if (withRecursion && cardsForPlayers[0].length >= topCards[0] && cardsForPlayers[1].length >= topCards[1]) {
+      const newCards = [[...cardsForPlayers[0].slice(0, topCards[0])], [...cardsForPlayers[1].slice(0, topCards[1])]];
+      const { winner } = playGame(newCards, withRecursion, preComputedGameCache);
+      roundWinner = winner;
+      if (winner) sortedCards = sortedCards.reverse();
+    } else {
+      sortedCards = [...topCards].sort((a, b) => b - a);
+    }
+    preComputedGameCache.set(json, roundWinner);
+    cardsForPlayers[roundWinner] = cardsForPlayers[roundWinner].concat(sortedCards);
+  }
+
+  const winner = cardsForPlayers.findIndex(c => c.length > 0);
+  return {
+    winner: winner,
+    winningHand: cardsForPlayers[winner],
+  };
+};
+
+export async function p2020day22_part1(input: string): Promise<number> {
+  const cardsForPlayers = parseInput(input);
+  const { winningHand } = playGame(cardsForPlayers, false);
+  const winningScore = getFinalScore(winningHand);
+  return winningScore;
 }
 
-export async function p2020day22_part2(input: string): Promise<string | undefined> {
-  return 'Not implemented';
+export async function p2020day22_part2(input: string): Promise<number> {
+  const cardsForPlayers = parseInput(input);
+  const { winningHand } = playGame(cardsForPlayers, true);
+  const winningScore = getFinalScore(winningHand);
+  return winningScore;
 }
 
 async function runTests() {
